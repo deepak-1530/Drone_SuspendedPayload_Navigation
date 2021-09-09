@@ -1,0 +1,236 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name='iris_depth_camera'>
+    <include>
+      <uri>model://iris</uri>
+    </include>
+
+    <!-- Groundtruth plugin -->
+    <plugin name="robot_groundtruth_sim" filename="libgazebo_ros_p3d.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <bodyName>iris::base_link</bodyName>
+      <topicName>odometry</topicName>
+      <gaussianNoise>0.0</gaussianNoise>
+      <frameName>world</frameName>
+      <xyzOffsets>0 0 0</xyzOffsets>
+      <rpyOffsets>0 0 0</rpyOffsets>
+    </plugin>
+
+    <include>
+      <uri>model://depth_camera_new</uri>
+      <pose>0.1 0 0 0 0 0</pose>
+    </include>
+    <joint name="depth_camera_joint" type="revolute">
+      <child>depth_camera_new::link</child>
+      <parent>iris::base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint>
+
+    <include>
+      <uri>model://c920</uri>
+      <pose>0 0 -0.05 0 1.57 0</pose>
+    </include>
+    <joint name="down_camera_joint" type="revolute">
+      <child>c920::link</child>
+      <parent>iris::base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint>
+
+
+    <link name="tether">
+      <pose>0 0 -0.5 0 0 0</pose>
+      <kinematic>0</kinematic>
+      <inertial>
+        <mass>0.001</mass>
+      </inertial>
+
+    <!--
+      <collision name="tether_collision">
+        <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.002</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+      </collision>
+      -->
+      
+      <visual name="tether_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>1</length>
+          </cylinder>
+        </geometry>
+        <!--<material>
+          <script>
+            <name>Gazebo/Black</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material> -->
+      </visual>
+    </link>
+    
+    <!-- Tether to Quadcopter Connection -->
+      <joint name="tether_connection" type="ball">
+        <parent>iris::base_link</parent>
+          <child>tether</child>
+          <pose>0 0 0.5 0 0</pose>
+
+          <axis>
+            <xyz>0 0 1</xyz>
+            <limit>
+              <lower>0</lower>
+              <upper>1</upper>
+              <effort>100</effort>
+              <velocity>-1</velocity>
+              <stiffness>100000000</stiffness>
+              <dissipation>1</dissipation>
+            </limit>
+            <dynamics>
+              <damping>5.0</damping>
+            </dynamics>
+            <use_parent_model_frame>1</use_parent_model_frame>
+          </axis>
+          <physics>
+            <ode>
+              <implicit_spring_damper>1</implicit_spring_damper>
+            </ode>
+          </physics>
+
+      </joint>
+
+
+    <link name="payload">
+      <gravity>1</gravity>
+      <inertial>
+        <mass>0.100</mass>
+      </inertial>
+      <pose>0 0 -1 0 0 0</pose>
+
+      <!--
+      <collision name="payload_collision">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+      -->
+
+      
+      <visual name="payload_visual">
+        <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>0.20 0.20 0.20</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+             <name>Gazebo/White</name> 
+              <uri>file://media/materials/scripts/gazebo.material</uri> 
+            <!--  <uri>model://aruco_visual_marker_7_pad/materials/scripts</uri>
+              <uri>model://aruco_visual_marker_7_pad/materials/textures</uri> -->
+              
+            </script>
+          </material>
+      </visual>
+    </link>
+    
+    <include>
+      <uri>model://aruco_visual_marker_7</uri>
+      <pose>0.05 0.05 -0.90 0 0 0</pose>
+      <name>aruco1</name>
+    </include>
+    <joint name="aruco_1" type="revolute">
+      <child>aruco1::marker_pad</child>
+      <parent>payload</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint> 
+
+    <include>
+      <uri>model://aruco_visual_marker_7</uri>
+      <name>aruco2</name>
+      <pose>-0.05 -0.05 -0.90 0 0 0</pose>
+    </include>
+    <joint name="aruco_2" type="revolute">
+      <child>aruco2::marker_pad</child>
+      <parent>payload</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint> 
+
+    <include>
+      <uri>model://aruco_visual_marker_7</uri>
+      <name>aruco3</name>
+      <pose>-0.05 0.05 -0.90 0 0 0</pose>
+    </include>
+    <joint name="aruco_3" type="revolute">
+      <child>aruco3::marker_pad</child>
+      <parent>payload</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint> 
+
+    <include>
+      <uri>model://aruco_visual_marker_7</uri>
+      <name>aruco4</name>
+      <pose>0.05 -0.05 -0.90 0 0 0</pose>
+    </include>
+    <joint name="aruco_4" type="revolute">
+      <child>aruco4::marker_pad</child>
+      <parent>payload</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint> 
+
+
+
+
+    <!-- Tether to Payload Connection -->
+      <joint name="tether_mass_connection" type="fixed">
+        <parent>tether</parent>
+        <child>payload</child>
+          <pose>0 0 -1 0 0 0</pose>
+      </joint>
+
+  </model>
+</sdf>

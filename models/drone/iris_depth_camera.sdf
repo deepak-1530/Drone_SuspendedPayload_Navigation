@@ -1,0 +1,135 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name='iris_depth_camera'>
+    <include>
+      <uri>model://iris</uri>
+    </include>
+
+    <!-- Groundtruth plugin -->
+    <plugin name="robot_groundtruth_sim" filename="libgazebo_ros_p3d.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <bodyName>iris::base_link</bodyName>
+      <topicName>odometry</topicName>
+      <gaussianNoise>0.0</gaussianNoise>
+      <frameName>world</frameName>
+      <xyzOffsets>0 0 0</xyzOffsets>
+      <rpyOffsets>0 0 0</rpyOffsets>
+    </plugin>
+
+    <include>
+      <uri>model://depth_camera_new</uri>
+      <pose>0.1 0 0 0 0 0</pose>
+    </include>
+    <joint name="depth_camera_joint" type="revolute">
+      <child>depth_camera_new::link</child>
+      <parent>iris::base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint>
+
+
+    <link name="tether">
+      <pose>0 0.5 0.0 1.57 0 0</pose>
+      <kinematic>0</kinematic>
+      <inertial>
+        <mass>0.001</mass>
+      </inertial>
+      <collision name="tether_collision">
+        <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.02</radius>
+              <length>1.0</length>
+            </cylinder>
+          </geometry>
+      </collision>
+      <visual name="tether_visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.02</radius>
+            <length>1</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Black</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+    </link>
+    
+    <!-- Tether to Quadcopter Connection -->
+      <joint name="tether_connection" type="ball">
+        <parent>iris::base_link</parent>
+          <child>tether</child>
+          <pose>0 0 0.5 0 0</pose>
+
+          <axis>
+            <xyz>0 0 1</xyz>
+            <limit>
+              <lower>0</lower>
+              <upper>1</upper>
+              <effort>100</effort>
+              <velocity>-1</velocity>
+              <stiffness>100000000</stiffness>
+              <dissipation>1</dissipation>
+            </limit>
+            <dynamics>
+              <damping>5.0</damping>
+            </dynamics>
+            <use_parent_model_frame>1</use_parent_model_frame>
+          </axis>
+          <physics>
+            <ode>
+              <implicit_spring_damper>1</implicit_spring_damper>
+            </ode>
+          </physics>
+
+      </joint>
+
+
+    <link name="payload">
+      <gravity>1</gravity>
+      <inertial>
+        <mass>0.350</mass>
+      </inertial>
+      <pose>0 1 0 1.5707 0 0</pose>
+      <collision name="payload_collision">
+        <pose>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="payload_visual">
+        <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>0.1 0.1 0.05</size>
+            </box>
+          </geometry>
+          <script>
+            <name>Gazebo/Black</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+      </visual>
+    </link>
+    
+    <!-- Tether to Payload Connection -->
+      <joint name="tether_mass_connection" type="fixed">
+        <parent>tether</parent>
+        <child>payload</child>
+          <pose>0 0 -1 0 0 0</pose>
+      </joint>
+
+  </model>
+</sdf>
