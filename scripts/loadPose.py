@@ -10,8 +10,6 @@ from sensor_msgs.msg import PointCloud2, Image
 br = CvBridge()
 PtCloud = None
 Img     = None
-#f = 114.7239
-#K = np.array([[f,0,200],[0,f,200],[0,0,1]])
 
 D =  np.array([0.0, 0.0, 0.0, 0.0, 0.0])
 K = np.array([[1360.4704964995865, 0.0, 960.5], [0.0, 1360.4704964995865,540.5], [0.0, 0.0, 1.0]])
@@ -63,7 +61,7 @@ def findArucoMarkers(img, markerSize = 6, totalMarkers=250, draw=True):
         
         # this is the coordinate of the payload with respect to camera
         # now use the transformation from camera to base-link to convert the pose in body-frame and publish it over TF
-        # now build the octomap
+        
 
         img_ = cv2.putText(img_, str(tvec), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2, cv2.LINE_AA)
     return img_
@@ -76,12 +74,15 @@ def imgCallback(msg):
     outImg = cv2.resize(outImg, (640,480), interpolation=cv2.INTER_NEAREST)
     cv2.imshow("Original Image", Img)
     cv2.imshow("Marker", outImg)
-
     cv2.waitKey(1)
+
+def poseCallback(msg):
+
 
 
 def genData():
     rospy.Subscriber('/iris_depth_camera/c920/image_raw',Image, imgCallback)
+    rospy.Subscriber('/mavros/local_position/pose', PoseStamped, poseCallback)
     rospy.spin()
 
 rospy.init_node("publish_pose")
