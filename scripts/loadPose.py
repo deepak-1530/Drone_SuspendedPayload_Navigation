@@ -6,23 +6,34 @@ import numpy as np
 from cv_bridge import CvBridge
 from sensor_msgs.msg import PointCloud2, Image
 from geometry_msgs.msg import PoseStamped
+import tf
+from tf.transformations import quaternion_matrix
 
 # declare a CvBridge object
 br = CvBridge()
 PtCloud = None
 Img     = None
+dronePose = PoseStamped()
 
 D =  np.array([0.0, 0.0, 0.0, 0.0, 0.0])
 K = np.array([[1360.4704964995865, 0.0, 960.5], [0.0, 1360.4704964995865,540.5], [0.0, 0.0, 1.0]])
 
+base_To_Cam_Tr = [0,0,-0.05] # translation
+base_To_Cam_R  = [0,1.57,0] # rotation
+
+map_To_Base_Tr = [0,0,0]
+map_To_Base_R  = [0,0,0]    # rotation
+
+listener = None
+
 def findArucoMarkers(img, markerSize = 6, totalMarkers=250, draw=True):
+    global listener
     markerCorners = None
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_ARUCO_ORIGINAL)
     arucoParam = aruco.DetectorParameters_create()
     bboxs, ids, rejected = aruco.detectMarkers(gray, arucoDict, markerCorners, parameters = arucoParam)
 
-    bboxs, ids, rejected = aruco.detectMarkers(gray, arucoDict, markerCorners, parameters = arucoParam)
 
     img_ = img.copy()
 
@@ -66,11 +77,25 @@ def findArucoMarkers(img, markerSize = 6, totalMarkers=250, draw=True):
         loadPose_camFrame = tvec/len(bboxs)
         print(loadPose_camFrame)
 
+        try:
+            (trans,rot) = listener.lookupTransform('map', 'camera_link_rgb', rospy.Time(0))
+            print(len(trans), len(rot))
+
+            R = quaternion_matrix(rot)
+            print(R)
+
+            # coordinates of the payload in world frame is
+            tMap = np.dot(R[0:3,0:3], loadPose_camFrame) + np.array(trans)
+            print("Payload coordinate is: ", tMap)
+            print("Camera coordinate is: ", trans)
+        except Exception as e:
+            print(e)
+    
+
     return img_
 
 def imgCallback(msg):
     Img = br.imgmsg_to_cv2(msg)
-    
     outImg = findArucoMarkers(Img)
     Img = cv2.resize(Img, (640,480),interpolation = cv2.INTER_NEAREST)
     outImg = cv2.resize(outImg, (640,480), interpolation=cv2.INTER_NEAREST)
@@ -78,13 +103,10 @@ def imgCallback(msg):
     cv2.imshow("Marker", outImg)
     cv2.waitKey(1)
 
-def poseCallback(msg):
-    pass
-
-
 def genData():
+    global listener
+    listener = tf.TransformListener()
     rospy.Subscriber('/iris_depth_camera/c920/image_raw',Image, imgCallback)
-    rospy.Subscriber('/mavros/local_position/pose', PoseStamped, poseCallback)
     rospy.spin()
 
 rospy.init_node("publish_pose")
