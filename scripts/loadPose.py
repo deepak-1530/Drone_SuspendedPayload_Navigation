@@ -13,18 +13,13 @@ from tf.transformations import quaternion_matrix
 br = CvBridge()
 PtCloud = None
 Img     = None
+
 dronePose = PoseStamped()
 loadPosePub = rospy.Publisher("/payload_pose", PoseStamped, queue_size=1)
 poseMsg = PoseStamped()
 
 D =  np.array([0.0, 0.0, 0.0, 0.0, 0.0])
 K = np.array([[1360.4704964995865, 0.0, 960.5], [0.0, 1360.4704964995865,540.5], [0.0, 0.0, 1.0]])
-
-base_To_Cam_Tr = [0,0,-0.05] # translation
-base_To_Cam_R  = [0,1.57,0] # rotation
-
-map_To_Base_Tr = [0,0,0]
-map_To_Base_R  = [0,0,0]    # rotation
 
 listener = None
 
@@ -37,7 +32,6 @@ def findArucoMarkers(img, markerSize = 6, totalMarkers=250, draw=True):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     bboxs, ids, rejected = aruco.detectMarkers(gray, arucoDict, markerCorners, parameters = arucoParam)
-
 
     img_ = img.copy()
 
@@ -73,9 +67,7 @@ def findArucoMarkers(img, markerSize = 6, totalMarkers=250, draw=True):
             tvec += pose[1][0][0]
             
             cv2.circle(img_, (int(cX), int(cY)), 8, (0,0,255), -1)
-    
-       # cv2.circle(img_, ( int(pX/len(bboxs)), int(pY/len(bboxs)) ), 16, (255,0,0), -1)
-    
+
         img_ = cv2.putText(img_, str(tvec), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2, cv2.LINE_AA)
 
         loadPose_camFrame = tvec/len(bboxs)
