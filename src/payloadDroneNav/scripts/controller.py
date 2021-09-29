@@ -42,6 +42,9 @@ targetVel         = []
 targetAcc         = []
 targetYaw         = 0
 
+norm_thrust_offset_ = 0
+norm_thrust_const   = 0
+
 bodyRateCmdPublisher = None
 
 ########################
@@ -78,7 +81,6 @@ def targetCallback(msg):
     targetAngles      = TF.euler_from_quaternion(targetOrientation)
 
     targetYaw         = targetAngles[2]
-
 
 
 ###########################
@@ -127,22 +129,21 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
 # Attitude Controller  #
 ########################
 def AttitudeController(accDesired):
-    global targetYaw
+    global targetYaw, norm_thrust_const, norm_thrust_offset_, attCtrl_tau_
 
-    qDes = helper.acc2quaternion(accDesired, targetYaw)
+    qDes         = helper.acc2quaternion(accDesired, targetYaw)
 
-    rateCmd  = []
-    rotmat   = np.zeros((3,3))
-    rotmat_d = np.zeros((3,3))
-    errorAtt = []
+    rateCmd      = [0,0,0,0]
 
-    rotmat   = helper.quatToRotationMatrix(currAttitude)
-    rotmat_d = helper.quatToRotationMatrix(qDes)
+    rotmat       = helper.quatToRotationMatrix(currAttitude)
+    rotmat_d     = helper.quatToRotationMatrix(qDes)
 
-    errorAtt     = 0.5*hat(rotmat_d.T * rotmat - rotmat.T * rotmat)
+    zb           = rotmat[:,2]
+
+    errorAtt     = 0.5*helper.hat(rotmat_d.T * rotmat - rotmat.T * rotmat)
     rateCmd[0:3] = (2.0 / attCtrl_tau_)*errorAtt
     rateCmd[3]   = np.max(0.0, np.min(1.0, norm_thrust_const*np.dot(ref_acc, zb) + norm_thrust_offset_))
-
+    return rateCmd
 
 ########################
 # Start the controller #

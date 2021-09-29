@@ -77,3 +77,9 @@ def quatToRotationMatrix(quat):
     r22 = quat[0]**2 - quat[1]**2 - quat[2]**2 + quat[3]**2
     
     R =  np.array([[r00,r01,r02],[r10,r11,r12],[r20,r21,r22]])
+
+#####################
+# Hat operation     #
+#####################
+def hat(vec):
+    return np.array([[0,-vec[2], vec[1]],[vec[2],0.0,-vec[0]],[-vec[1], vec[0], 0]])
