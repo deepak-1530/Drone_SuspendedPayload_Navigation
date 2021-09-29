@@ -18,6 +18,7 @@
 
 import rospy
 import numpy as np
+from geometry_msgs.msg import Transform, Twist
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 
 x = []
@@ -40,27 +41,35 @@ def generateWayPoints():
         trajPt = MultiDOFJointTrajectoryPoint()
         
         # set pose
-        trajPt.transforms.pose.translation.x = x[i]
-        trajPt.transforms.pose.translation.y = 0
-        trajPt.transforms.pose.translation.z = 7
-        trajPt.transforms.rotation.x    = 0
-        trajPt.transforms.rotation.y    = 0
-        trajPt.transforms.rotation.z    = 0
-        trajPt.transforms.rotation.w    = 1.0
+        pose = Transform()
+        pose.translation.x = x[i]
+        pose.translation.y = 0
+        pose.translation.z = 7
+        pose.rotation.x    = 0
+        pose.rotation.y    = 0
+        pose.rotation.z    = 0
+        pose.rotation.w    = 1.0
 
-        # set velocities
-        trajPt.velocities.linear.x      = 2.0
-        trajPt.velocities.linear.y      = 0
-        trajPt.velocities.linear.z      = 0
+
+        # set velocity
+        vel = Twist()
+        vel.linear.x       = 2.0
+        vel.linear.y       = 0
+        vel.linear.z       = 0
 
         # set accelerations
-        trajPt.accelerations.x           = 0.5
-        trajPt.accelerations.y           = 0
-        trajPt.accelerations.z           = 0.0
+        acc = Twist()
+        acc.linear.x       = 0.5
+        acc.linear.y       = 0
+        acc.linear.z       = 0
+
+        trajPt.transforms.append(pose)
+        trajPt.velocities.append(vel)
+        trajPt.accelerations.append(acc)
 
         trajMsg = MultiDOFJointTrajectory()
         trajMsg.header.stamp = rospy.Time.now()
-        trajMsg.header.frame = 'map'
+        trajMsg.header.frame_id = 'map'
         trajMsg.points.append(trajPt)
 
         trajPub.publish(trajMsg)

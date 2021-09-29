@@ -87,7 +87,7 @@ def targetCallback(msg):
 
     targetPt          = MultiDOFJointTrajectoryPoint()
     targetPt          = msg.points[0]
-
+    pt                = targetPt
     targetPose        = [pt.transforms[0].translation.x, pt.transforms[0].translation.y, pt.transforms[0].translation.z]
     targetOrientation = [pt.transforms[0].rotation.w, pt.transforms[0].rotation.y, pt.transforms[0].rotation.z, pt.transforms[0].rotation.z]
     targetVel         = [pt.velocities[0].linear.x, pt.velocities[0].linear.y, pt.velocities[0].linear.z]
@@ -97,7 +97,6 @@ def targetCallback(msg):
 
     targetYaw         = targetAngles[2]
 
-
 ###########################
 # Command loop            #
 ###########################
@@ -105,12 +104,21 @@ def cmdLoopCallback(msg):
     global targetPose, targetOrientation, targetVel, targetAcc, targetYaw, bodyRateCmdPublisher
     print('Control loop initiated')
 
+    print('Acceleration is ')
+    print(targetAcc)
+    print('\n***********************************\n')
     print(currPose, currAtt, currVel, currAttVel)
 
     if np.linalg.norm(np.array(targetPose)) is not 0:
 
         accDesired              = positionController(targetPose, targetVel, targetAcc, targetYaw)
+        
+        print('*********accDesired is: ')
+        print(accDesired)
+
         bodyRateCmd             = AttitudeController(accDesired)
+
+        print('bodyRateCmd')
 
         command                 = AttitudeTarget()
         command.header.stamp    = rospy.Time.now()
@@ -137,19 +145,21 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
     global kPos, kVel, g, max_fb_acc
     
     # target acceleration
-    aRef = targetAcc
+    aRef = np.array(targetAcc)
     
     # target rotation in quaternion
-    qRef = helper.acc2quaternion(np.array(aRef)-g, targetYaw)
+    print('aref is: ')
+    print(aRef)
+    qRef = helper.acc2quaternion(aRef-g, targetYaw)
     
     # target rotation matrix
     Rref = helper.quatToRotationMatrix(qRef)
 
     # now calculate the errors in position and velocity
-    posErr = targetPos - currPos
-    velErr = targetVel - currVel
+    posErr = np.array(targetPose) - np.array(currPose)
+    velErr = np.array(targetVel) - np.array(currVel)
 
-    afb    = np.diag(kPos)*posErr + np.diag(kVel)*velErr
+    afb    = np.dot(np.diag(kPos),posErr) + np.dot(np.diag(kVel),velErr)
 
     if np.linalg.norm(afb) > max_fb_acc:
         afb = (max_fb_acc / np.linalg.norm(afb))*afb
@@ -162,20 +172,20 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
 # Attitude Controller  #
 ########################
 def AttitudeController(accDesired):
-    global targetYaw, norm_thrust_const, norm_thrust_offset_, attCtrl_tau_
-
+    global targetYaw, norm_thrust_const, norm_thrust_offset_, attCtrl_tau_, currAtt
+    ref_acc =  accDesired
     qDes         = helper.acc2quaternion(accDesired, targetYaw)
 
     rateCmd      = [0,0,0,0]
 
-    rotmat       = helper.quatToRotationMatrix(currAttitude)
+    rotmat       = helper.quatToRotationMatrix(currAtt)
     rotmat_d     = helper.quatToRotationMatrix(qDes)
 
     zb           = rotmat[:,2]
 
     errorAtt     = 0.5*helper.hat(rotmat_d.T * rotmat - rotmat.T * rotmat)
     rateCmd[0:3] = (2.0 / attCtrl_tau_)*errorAtt
-    rateCmd[3]   = np.max(0.0, np.min(1.0, norm_thrust_const*np.dot(ref_acc, zb) + norm_thrust_offset_))
+    rateCmd[3]   = max(0.0, min(1.0, norm_thrust_const*np.dot(ref_acc, zb) + norm_thrust_offset_))
     return rateCmd
 
 ########################
@@ -198,7 +208,7 @@ def initController():
     ################################
     # set the control timer        #
     ################################
-    rospy.Timer(rospy.Duration(0.01), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
+    rospy.Timer(rospy.Duration(0.1), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
 
     ####################################################
     # Change drone state to offboard mode              #
@@ -223,6 +233,7 @@ def initController():
 #    offb_set_mode.request.custom_mode='OFFBOARD'
 
     set_mode_client(base_mode=0, custom_mode="OFFBOARD")
+    print("Offboard mode started ..")
 
     rospy.spin()
 
