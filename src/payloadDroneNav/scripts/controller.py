@@ -38,10 +38,10 @@ maxAcc       = 3.0
 maxVel       = 5.0
 
 # the targets are updated as soon as a path is received
-targetPose        = []
-targetOrientation = []
-targetVel         = []
-targetAcc         = []
+targetPose        = [0,0,0]
+targetOrientation = [0,0,0,0]
+targetVel         = [0,0,0]
+targetAcc         = [0,0,0]
 targetYaw         = 0
 
 norm_thrust_offset_ = 0.1
@@ -133,6 +133,9 @@ def cmdLoopCallback(msg):
         command.orientation.z   = targetOrientation[3]
         command.thrust          = bodyRateCmd[3]
 
+        print('Command published is: ')
+        print(command)
+
         # publish the body rate command
         bodyRateCmdPublisher.publish(command)
         print("Command published")
@@ -183,9 +186,16 @@ def AttitudeController(accDesired):
 
     zb           = rotmat[:,2]
 
-    errorAtt     = 0.5*helper.hat(rotmat_d.T * rotmat - rotmat.T * rotmat)
-    rateCmd[0:3] = (2.0 / attCtrl_tau_)*errorAtt
+    errorAtt     = 0.5*helper.hatInv(rotmat_d.T * rotmat - rotmat.T * rotmat)
+
+    print(errorAtt.shape)
+
+    rateCmd[0] = (2.0 / attCtrl_tau_)*errorAtt[0]
+    rateCmd[1] = (2.0 / attCtrl_tau_)*errorAtt[1]
+    rateCmd[2] = (2.0 / attCtrl_tau_)*errorAtt[2]
     rateCmd[3]   = max(0.0, min(1.0, norm_thrust_const*np.dot(ref_acc, zb) + norm_thrust_offset_))
+    print('return rateCmd is: ')
+    print(rateCmd)
     return rateCmd
 
 ########################

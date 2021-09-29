@@ -95,3 +95,9 @@ def quatToRotationMatrix(quat):
 #####################
 def hat(vec):
     return np.array([[0,-vec[2], vec[1]],[vec[2],0.0,-vec[0]],[-vec[1], vec[0], 0]])
+
+################################
+# Inverse Hat or Vee operation #
+################################
+def hatInv(mat):
+    return np.array([mat[2,1], mat[0,2], mat[1,0]])
