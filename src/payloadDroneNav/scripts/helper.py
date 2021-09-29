@@ -23,7 +23,7 @@ def acc2quaternion(acc, yaw):
 # Convert rotation matrix to 
 # quaternion                
 #############################
- def rotationMatrixToQuat(rotmat):
+def rotationMatrixToQuat(rotmat):
     quat = [0,0,0,0]
     S    = 0
     tr   = np.trace(rotmat)
@@ -77,6 +77,7 @@ def quatToRotationMatrix(quat):
     r22 = quat[0]**2 - quat[1]**2 - quat[2]**2 + quat[3]**2
     
     R =  np.array([[r00,r01,r02],[r10,r11,r12],[r20,r21,r22]])
+    return R
 
 #####################
 # Hat operation     #

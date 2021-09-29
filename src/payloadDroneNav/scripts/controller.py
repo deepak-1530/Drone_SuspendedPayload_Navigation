@@ -17,7 +17,7 @@ import helper
 
 # ros dependencies
 import rospy
-import tf.Transformations as TF
+import tf.transformations as TF
 from mavros_msgs.msg import AttitudeTarget
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
@@ -44,6 +44,7 @@ targetYaw         = 0
 
 norm_thrust_offset_ = 0
 norm_thrust_const   = 0
+g                   = 10
 
 bodyRateCmdPublisher = None
 
@@ -53,7 +54,7 @@ bodyRateCmdPublisher = None
 def mavPoseCallback(msg):
     global currPose, currAtt
     currPose = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
-    currAtt  = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
+    currAtt  = [msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z]
 
 ##########################
 # Drone angular velocity #
@@ -88,13 +89,29 @@ def targetCallback(msg):
 ###########################
 def cmdLoopCallback(msg):
     global targetPose, targetOrientation, targetVel, targetAcc, targetYaw, bodyRateCmdPublisher
-    print(f'Control loop initiated')
+    print('Control loop initiated')
 
-    accDesired         = PositionController(targetPosition, targetVek, targetAcc, targetYaw)
-    bodyRateCmd        = AttitudeController(accDesired)
+    print(currPose, currAtt, currVel, currAttVel)
+
+    accDesired              = positionController(targetPose, targetVel, targetAcc, targetYaw)
+    bodyRateCmd             = AttitudeController(accDesired)
+
+    command                 = AttitudeTarget()
+    command.header.stamp    = ros::Time::now()
+    command.header.frame_id = "map"
+    command.body_rate.x     = bodyRateCmd[0]
+    command.body_rate.y     = bodyRateCmd[1]
+    command.body_rate.z     = bodyRateCmd[2]
+    command.type_mask       = 128
+    command.orientation.w   = targetOrientation[0]
+    command.orientation.x   = targetOrientation[1]
+    command.orientation.y   = targetOrientation[2]
+    command.orientation.z   = targetOrientation[3]
+    command.thrust          = bodyRateCmd[3]
 
     # publish the body rate command
-    bodyRateCmdPublisher.publish(bodyRateCmd)
+    bodyRateCmdPublisher.publish(command)
+    print("Command published")
 
 
 #########################
@@ -107,7 +124,7 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
     aRef = targetAcc
     
     # target rotation in quaternion
-    qRef = helper.acc2quaternion(aRef-g, targetYaw)
+    qRef = helper.acc2quaternion(np.array(aRef)-g, targetYaw)
     
     # target rotation matrix
     Rref = helper.quatToRotationMatrix(qRef)
@@ -116,7 +133,7 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
     posErr = targetPos - currPos
     velErr = targetVel - currVel
 
-    afb    = kPos*posErr + kVel*velErr
+    afb    = np.diag(kPos)*posErr + np.diag(kVel)*velErr
 
     if np.linalg.norm(afb) > max_fb_acc:
         afb = (max_fb_acc / np.linalg.norm(afb))*afb
@@ -160,7 +177,7 @@ def initController():
     rospy.Subscriber('/mavros/local_position/velocity_local', TwistStamped, mavVelCallback,tcp_nodelay=True)  # linear + angular velocity callback
     rospy.Subscriber('/target_state',MultiDOFJointTrajectory, targetCallback,tcp_nodelay=True)                # goal position (with orientation) + linear velocity + acceleration
 
-    bodyRateCmdPublisher = rospy.Publisher('/command/bodyRate', AttitudeTarget, queue_size=1)
+    bodyRateCmdPublisher = rospy.Publisher('/mavros/setpoint_raw/attitude', AttitudeTarget, queue_size=1)
 
     ################################
     # set the control timer        #
@@ -168,3 +185,8 @@ def initController():
     rospy.Timer(rospy.Duration(0.01), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
 
     rospy.spin()
+
+if __name__=="__main__":
+    print("Controller started")
+    rospy.init_node("controller")
+    initController()
