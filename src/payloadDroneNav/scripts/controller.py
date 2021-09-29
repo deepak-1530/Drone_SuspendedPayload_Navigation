@@ -12,6 +12,9 @@
 import os
 import numpy as np
 
+# helper mathematical functions
+import helper
+
 # ros dependencies
 import rospy
 import tf.Transformations as TF
@@ -77,6 +80,7 @@ def targetCallback(msg):
     targetYaw         = targetAngles[2]
 
 
+
 ###########################
 # Command loop            #
 ###########################
@@ -84,14 +88,60 @@ def cmdLoopCallback(msg):
     global targetPose, targetOrientation, targetVel, targetAcc, targetYaw, bodyRateCmdPublisher
     print(f'Control loop initiated')
 
-    accDesired         = PositionController(targetPosition, targetVek, targetAcc)
+    accDesired         = PositionController(targetPosition, targetVek, targetAcc, targetYaw)
     bodyRateCmd        = AttitudeController(accDesired)
 
     # publish the body rate command
     bodyRateCmdPublisher.publish(bodyRateCmd)
 
 
+#########################
+# Position Controller   #
+#########################
+def positionController(targetPos, targetVel, targetAcc, targetYaw):
+    global kPos, kVel, g, max_fb_acc
+    
+    # target acceleration
+    aRef = targetAcc
+    
+    # target rotation in quaternion
+    qRef = helper.acc2quaternion(aRef-g, targetYaw)
+    
+    # target rotation matrix
+    Rref = helper.quatToRotationMatrix(qRef)
 
+    # now calculate the errors in position and velocity
+    posErr = targetPos - currPos
+    velErr = targetVel - currVel
+
+    afb    = kPos*posErr + kVel*velErr
+
+    if np.linalg.norm(afb) > max_fb_acc:
+        afb = (max_fb_acc / np.linalg.norm(afb))*afb
+    
+    aDes   = afb + aRef - g
+
+    return aDes
+
+########################
+# Attitude Controller  #
+########################
+def AttitudeController(accDesired):
+    global targetYaw
+
+    qDes = helper.acc2quaternion(accDesired, targetYaw)
+
+    rateCmd  = []
+    rotmat   = np.zeros((3,3))
+    rotmat_d = np.zeros((3,3))
+    errorAtt = []
+
+    rotmat   = helper.quatToRotationMatrix(currAttitude)
+    rotmat_d = helper.quatToRotationMatrix(qDes)
+
+    errorAtt     = 0.5*hat(rotmat_d.T * rotmat - rotmat.T * rotmat)
+    rateCmd[0:3] = (2.0 / attCtrl_tau_)*errorAtt
+    rateCmd[3]   = np.max(0.0, np.min(1.0, norm_thrust_const*np.dot(ref_acc, zb) + norm_thrust_offset_))
 
 
 ########################
