@@ -12,8 +12,8 @@ def acc2quaternion(acc, yaw):
     proj_xb_des = [math.cos(yaw), math.sin(yaw), 0.0]
 
     zb_des      = acc/np.linalg.norm(acc)
-    yb_des      = np.cross([zb_des, proj_xb_des])/np.linalg.norm(np.cross([zb_des, proj_xb_des]))
-    xb_des      = np.cross([yb_des, zb_des])/np.linalg.norm(np.cross([yb_des, zb_des]))
+    yb_des      = np.cross(zb_des, proj_xb_des)/np.linalg.norm(np.cross(zb_des, proj_xb_des))
+    xb_des      = np.cross(yb_des, zb_des)/np.linalg.norm(np.cross(yb_des, zb_des))
 
     rotmat      = np.array([[xb_des[0], yb_des[0], zb_des[0]],[xb_des[1], yb_des[1], zb_des[1]],[xb_des[2], yb_des[2], zb_des[2]]])
     quat        = rotationMatrixToQuat(rotmat)
