@@ -24,10 +24,10 @@ from mavros_msgs.srv import CommandBool, SetMode
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 
-currPose     = [] # current drone position
-currVel      = [] # current drone velocity
-currAtt      = [] # current drone attitude
-currAttVel   = [] # current drone angular velocity
+currPose     = [0,0,0] # current drone position
+currVel      = [0,0,0] # current drone velocity
+currAtt      = [0,0,0,0] # current drone attitude
+currAttVel   = [0,0,0] # current drone angular velocity
 
 kPos         = [8.0, 8.0, 10.0]
 kVel         = [1.5, 1.5, 3.3]
@@ -61,6 +61,8 @@ offb_set_mode = SetMode
 def state_cb(state):
     global current_state
     current_state = state
+    print('Current mode is: ')
+    print(current_state)
 
 ########################
 # Drone pose callback  #
@@ -102,23 +104,13 @@ def targetCallback(msg):
 ###########################
 def cmdLoopCallback(msg):
     global targetPose, targetOrientation, targetVel, targetAcc, targetYaw, bodyRateCmdPublisher
-    print('Control loop initiated')
-
-    print('Acceleration is ')
-    print(targetAcc)
-    print('\n***********************************\n')
-    print(currPose, currAtt, currVel, currAttVel)
 
     if np.linalg.norm(np.array(targetPose)) is not 0:
 
         accDesired              = positionController(targetPose, targetVel, targetAcc, targetYaw)
         
-        print('*********accDesired is: ')
-        print(accDesired)
-
         bodyRateCmd             = AttitudeController(accDesired)
 
-        print('bodyRateCmd')
 
         command                 = AttitudeTarget()
         command.header.stamp    = rospy.Time.now()
@@ -133,8 +125,6 @@ def cmdLoopCallback(msg):
         command.orientation.z   = targetOrientation[3]
         command.thrust          = bodyRateCmd[3]
 
-        print('Command published is: ')
-        print(command)
 
         # publish the body rate command
         bodyRateCmdPublisher.publish(command)
@@ -151,8 +141,6 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
     aRef = np.array(targetAcc)
     
     # target rotation in quaternion
-    print('aref is: ')
-    print(aRef)
     qRef = helper.acc2quaternion(aRef-g, targetYaw)
     
     # target rotation matrix
@@ -188,14 +176,10 @@ def AttitudeController(accDesired):
 
     errorAtt     = 0.5*helper.hatInv(rotmat_d.T * rotmat - rotmat.T * rotmat)
 
-    print(errorAtt.shape)
-
     rateCmd[0] = (2.0 / attCtrl_tau_)*errorAtt[0]
     rateCmd[1] = (2.0 / attCtrl_tau_)*errorAtt[1]
     rateCmd[2] = (2.0 / attCtrl_tau_)*errorAtt[2]
     rateCmd[3]   = max(0.0, min(1.0, norm_thrust_const*np.dot(ref_acc, zb) + norm_thrust_offset_))
-    print('return rateCmd is: ')
-    print(rateCmd)
     return rateCmd
 
 ########################
@@ -218,7 +202,7 @@ def initController():
     ################################
     # set the control timer        #
     ################################
-    rospy.Timer(rospy.Duration(0.1), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
+    rospy.Timer(rospy.Duration(0.01), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
 
     ####################################################
     # Change drone state to offboard mode              #
