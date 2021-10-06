@@ -29,26 +29,25 @@ currVel      = [0,0,0] # current drone velocity
 currAtt      = [0,0,0,0] # current drone attitude
 currAttVel   = [0,0,0] # current drone angular velocity
 
-kPos         = [8.0, 8.0, 10.0]
+kPos         = [4.0, 4.0, 5.0]
 kVel         = [1.5, 1.5, 3.3]
 
-attCtrl_tau_ = 0.1
+attCtrl_tau_ = 0.10
 
 maxAcc       = 3.0
 maxVel       = 5.0
 
 # the targets are updated as soon as a path is received
-targetPose        = [0,0,0]
-targetOrientation = [0,0,0,0]
-targetVel         = [0,0,0]
-targetAcc         = [0,0,0]
-targetYaw         = 0
+targetPose          = [0,0,2]
+targetOrientation   = [0,0,0,0]
+targetVel           = [0,0,0]
+targetAcc           = [0,0,0]
+targetYaw           = 0
 
-norm_thrust_offset_ = 0.1
-norm_thrust_const   = 0.05
-max_fb_acc          = 9.0
-g                   = 10
-
+norm_thrust_offset_ = 0.005
+norm_thrust_const   = 0.06
+max_fb_acc          = 3.0
+g                   = [0,0,-9.8]
 
 bodyRateCmdPublisher = None
 
@@ -106,7 +105,8 @@ def cmdLoopCallback(msg):
     global targetPose, targetOrientation, targetVel, targetAcc, targetYaw, bodyRateCmdPublisher
 
     if np.linalg.norm(np.array(targetPose)) is not 0:
-
+        
+        print(targetPose)
         accDesired              = positionController(targetPose, targetVel, targetAcc, targetYaw)
         
         bodyRateCmd             = AttitudeController(accDesired)
@@ -126,7 +126,7 @@ def cmdLoopCallback(msg):
 
         # publish the body rate command
         bodyRateCmdPublisher.publish(command)
-        print(command)
+        print(targetPose, command.body_rate, command.thrust)
 #        print("Command published")
 
 
@@ -149,7 +149,7 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
     posErr = np.array(targetPose) - np.array(currPose)
     velErr = np.array(targetVel) - np.array(currVel)
 
-    afb    = -np.dot(np.diag(kPos),posErr) - np.dot(np.diag(kVel),velErr)
+    afb    = np.dot(np.diag(kPos),posErr) + np.dot(np.diag(kVel),velErr)
 
     if np.linalg.norm(afb) > max_fb_acc:
         afb = (max_fb_acc / np.linalg.norm(afb))*afb
@@ -172,9 +172,12 @@ def AttitudeController(accDesired):
     rotmat       = helper.quatToRotationMatrix(currAtt)
     rotmat_d     = helper.quatToRotationMatrix(qDes)
 
-    zb           = rotmat[:,2]
+    zb           = -rotmat[:,2]
 
-    errorAtt     = 0.5*helper.hatInv(rotmat_d.T * rotmat - rotmat.T * rotmat)
+
+#    zb           = -ref_acc/np.linalg.norm(ref_acc)
+
+    errorAtt     = 0.5*helper.hatInv(rotmat_d.T * rotmat - rotmat.T * rotmat_d)
 
     rateCmd[0] = (2.0 / attCtrl_tau_)*errorAtt[0]
     rateCmd[1] = (2.0 / attCtrl_tau_)*errorAtt[1]

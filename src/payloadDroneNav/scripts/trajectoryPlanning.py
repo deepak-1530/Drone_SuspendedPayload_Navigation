@@ -27,9 +27,11 @@ def generateWayPoints():
     trajPub = rospy.Publisher('/target_state', MultiDOFJointTrajectory, queue_size=1)
     global x
 
-    t = np.linspace(0,10,1000)
+    t = np.linspace(0,2,10000)
 
     x = 1.0 + 0.2*t + 0.3*t**2 + 0.4*t**3
+    v = 0.2 + 0.6*t + 1.2*t**2
+    a = 0.6 + 2.4*t
 
     rate = rospy.Rate(10) # publish data at 10 Hz
 
@@ -44,7 +46,7 @@ def generateWayPoints():
         pose = Transform()
         pose.translation.x = x[i]
         pose.translation.y = 0
-        pose.translation.z = 7
+        pose.translation.z = 2
         pose.rotation.x    = 0
         pose.rotation.y    = 0
         pose.rotation.z    = 0
@@ -53,13 +55,13 @@ def generateWayPoints():
 
         # set velocity
         vel = Twist()
-        vel.linear.x       = 2.0
+        vel.linear.x       = v[i]
         vel.linear.y       = 0
         vel.linear.z       = 0
 
         # set accelerations
         acc = Twist()
-        acc.linear.x       = 0.5
+        acc.linear.x       = a[i]
         acc.linear.y       = 0
         acc.linear.z       = 0
 
