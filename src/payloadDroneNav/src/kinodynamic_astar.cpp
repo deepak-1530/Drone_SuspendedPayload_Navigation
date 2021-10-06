@@ -199,7 +199,6 @@ int fast_planner::KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vect
 
 
   //  }
-
         /* random obstacle checking */
         octomap::point3d chckPt;
         chckPt.x() = pro_state(0);
@@ -207,8 +206,6 @@ int fast_planner::KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vect
         chckPt.z() = pro_state(2);
 
         // calculate the distance of these points
-
-
 
         /* not in close set */
         Eigen::Vector3i pro_id   = posToIndex(pro_state.head(3));
@@ -249,6 +246,7 @@ int fast_planner::KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vect
 
           float distD;
           float distP;
+
           octomap::point3d pointD;
           octomap::point3d pointP;
           
@@ -260,15 +258,19 @@ int fast_planner::KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vect
           pointP.y() = pos(1);
           pointP.z() = pos(2) - 1.0;
 
+          // x(t) = a + b*t**2 + c*t**3 + d*t**4
+
           //cout<<"Point to be checked is: "<<pos.transpose()<<endl;
           
           octomap::point3d closestObstacleD;
           octomap::point3d closestObstacleP;
+
           OctoEDT->getDistanceAndClosestObstacle(pointD, distD, closestObstacleD);
           OctoEDT->getDistanceAndClosestObstacle(pointP, distP, closestObstacleP);
           
           //std::cout<<"Distances are: "<<dist<<std::endl;
-          if (distD < margin_ || distP < 0.50) {
+          if (distD < margin_ || distP < 0.50) 
+          {
             std::cout<<"Collision "<<pointD<<" and "<<pointP<<" -- "<<distD<<" and "<<distP<<std::endl;
             is_occ = true;
             break;
@@ -791,3 +793,4 @@ void fast_planner::KinodynamicAstar::stateTransit(Eigen::Matrix<double, 6, 1>& s
 }
 
 }  // namespace fast_planner
+

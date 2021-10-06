@@ -91,7 +91,7 @@ def targetCallback(msg):
     targetPt          = msg.points[0]
     pt                = targetPt
     targetPose        = [pt.transforms[0].translation.x, pt.transforms[0].translation.y, pt.transforms[0].translation.z]
-    targetOrientation = [pt.transforms[0].rotation.w, pt.transforms[0].rotation.y, pt.transforms[0].rotation.z, pt.transforms[0].rotation.z]
+    targetOrientation = [pt.transforms[0].rotation.w, pt.transforms[0].rotation.x, pt.transforms[0].rotation.y, pt.transforms[0].rotation.z]
     targetVel         = [pt.velocities[0].linear.x, pt.velocities[0].linear.y, pt.velocities[0].linear.z]
     targetAcc         = [pt.accelerations[0].linear.x, pt.accelerations[0].linear.y, pt.accelerations[0].linear.z]
 
@@ -111,7 +111,6 @@ def cmdLoopCallback(msg):
         
         bodyRateCmd             = AttitudeController(accDesired)
 
-
         command                 = AttitudeTarget()
         command.header.stamp    = rospy.Time.now()
         command.header.frame_id = "map"
@@ -125,10 +124,10 @@ def cmdLoopCallback(msg):
         command.orientation.z   = targetOrientation[3]
         command.thrust          = bodyRateCmd[3]
 
-
         # publish the body rate command
         bodyRateCmdPublisher.publish(command)
-        print("Command published")
+        print(command)
+#        print("Command published")
 
 
 #########################
@@ -150,7 +149,7 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
     posErr = np.array(targetPose) - np.array(currPose)
     velErr = np.array(targetVel) - np.array(currVel)
 
-    afb    = np.dot(np.diag(kPos),posErr) + np.dot(np.diag(kVel),velErr)
+    afb    = -np.dot(np.diag(kPos),posErr) - np.dot(np.diag(kVel),velErr)
 
     if np.linalg.norm(afb) > max_fb_acc:
         afb = (max_fb_acc / np.linalg.norm(afb))*afb
@@ -164,8 +163,9 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
 ########################
 def AttitudeController(accDesired):
     global targetYaw, norm_thrust_const, norm_thrust_offset_, attCtrl_tau_, currAtt
-    ref_acc =  accDesired
-    qDes         = helper.acc2quaternion(accDesired, targetYaw)
+    
+    ref_acc      =  accDesired
+    qDes         =  helper.acc2quaternion(accDesired, targetYaw)
 
     rateCmd      = [0,0,0,0]
 
@@ -179,7 +179,8 @@ def AttitudeController(accDesired):
     rateCmd[0] = (2.0 / attCtrl_tau_)*errorAtt[0]
     rateCmd[1] = (2.0 / attCtrl_tau_)*errorAtt[1]
     rateCmd[2] = (2.0 / attCtrl_tau_)*errorAtt[2]
-    rateCmd[3]   = max(0.0, min(1.0, norm_thrust_const*np.dot(ref_acc, zb) + norm_thrust_offset_))
+    rateCmd[3] = -min(0.0, min(1.0, norm_thrust_const*np.dot(ref_acc, zb) + norm_thrust_offset_))
+    #rateCmd[3] = 0.70
     return rateCmd
 
 ########################
@@ -216,11 +217,12 @@ def initController():
     p.pose.position.x = 0
     p.pose.position.y = 0
     p.pose.position.z = 0
+    p.pose.orientation.w = 1.0
 
     localPosePub = rospy.Publisher('/mavros/local_position/pose', PoseStamped, queue_size=1)
 
     # publish the above point to convert to offboard mode
-    for i in range(100):
+    for i in range(10):
         localPosePub.publish(p)
     
     offb_set_mode = SetMode()
