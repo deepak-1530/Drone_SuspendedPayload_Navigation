@@ -36,8 +36,7 @@ catkin_package(
 add_executable(Planner src/Planner.cpp src/kinodynamic_astar.cpp)
 target_link_libraries(Planner ${catkin_LIBRARIES} ${DYNAMICEDT3D_LIBRARIES})
 
-add_executable(noYawPlanner src/noYawPlanner.cpp src/kinodynamic_astar.cpp)
-target_link_libraries(noYawPlanner ${catkin_LIBRARIES} ${DYNAMICEDT3D_LIBRARIES})
+
 
 add_executable(Controller src/Controller.cpp)
 target_link_libraries(Controller ${catkin_LIBRARIES})

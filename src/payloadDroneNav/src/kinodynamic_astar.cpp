@@ -25,7 +25,7 @@
  * Source file to implement Kinodynamic A* Planning
 **/
 
-#include "FastPlannerOctomap/kinodynamic_astar.h"
+#include "payloadDroneNav/kinodynamic_astar.h"
 #include <sstream>
 #include<dynamicEDT3D/dynamicEDTOctomap.h>
 

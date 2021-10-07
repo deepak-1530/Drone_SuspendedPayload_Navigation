@@ -9,12 +9,12 @@
  * Drone controlled using PX4-Offboard position control
 **/
 
-#include"FastPlannerOctomap/utils.h"
+#include"payloadDroneNav/utils.h"
 
 /** Planning and mapping headers **/
-#include"FastPlannerOctomap/kinodynamic_astar.h"
-#include"FastPlannerOctomap/bspline.h"
-#include"FastPlannerOctomap/Map.h"
+#include"payloadDroneNav/kinodynamic_astar.h"
+#include"payloadDroneNav/bspline.h"
+#include"payloadDroneNav/Map.h"
 
 #include"std_msgs/Float64.h"
 

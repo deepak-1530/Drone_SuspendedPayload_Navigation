@@ -29,8 +29,8 @@ currVel      = [0,0,0] # current drone velocity
 currAtt      = [0,0,0,0] # current drone attitude
 currAttVel   = [0,0,0] # current drone angular velocity
 
-kPos         = [4.0, 4.0, 5.0]
-kVel         = [1.5, 1.5, 3.3]
+kPos         = [50.0, 50.0, 4.0]
+kVel         = [3  .5, 2.5, 3.3]
 
 attCtrl_tau_ = 0.10
 
@@ -44,8 +44,8 @@ targetVel           = [0,0,0]
 targetAcc           = [0,0,0]
 targetYaw           = 0
 
-norm_thrust_offset_ = 0.005
-norm_thrust_const   = 0.06
+norm_thrust_offset_ = 0.10
+norm_thrust_const   = 0.07
 max_fb_acc          = 3.0
 g                   = [0,0,-9.8]
 
@@ -126,7 +126,7 @@ def cmdLoopCallback(msg):
 
         # publish the body rate command
         bodyRateCmdPublisher.publish(command)
-        print(targetPose, command.body_rate, command.thrust)
+        print(targetPose, targetYaw, command.body_rate, command.thrust)
 #        print("Command published")
 
 
@@ -149,12 +149,15 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
     posErr = np.array(targetPose) - np.array(currPose)
     velErr = np.array(targetVel) - np.array(currVel)
 
+    print('Position and velocity errors are')
+ 
     afb    = np.dot(np.diag(kPos),posErr) + np.dot(np.diag(kVel),velErr)
 
     if np.linalg.norm(afb) > max_fb_acc:
         afb = (max_fb_acc / np.linalg.norm(afb))*afb
     
     aDes   = afb + aRef - g
+ 
 
     return aDes
 
