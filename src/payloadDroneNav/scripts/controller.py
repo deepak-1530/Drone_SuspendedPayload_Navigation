@@ -23,14 +23,15 @@ from mavros_msgs.msg import AttitudeTarget
 from mavros_msgs.srv import CommandBool, SetMode
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
+import mavros_msgs
 
 currPose     = [0,0,0] # current drone position
 currVel      = [0,0,0] # current drone velocity
 currAtt      = [0,0,0,0] # current drone attitude
 currAttVel   = [0,0,0] # current drone angular velocity
 
-kPos         = [50.0, 50.0, 4.0]
-kVel         = [3  .5, 2.5, 3.3]
+kPos         = [10.0, 10.0, 15.0]
+kVel         = [3.5, 3.5, 3.3]
 
 attCtrl_tau_ = 0.10
 
@@ -61,7 +62,29 @@ def state_cb(state):
     global current_state
     current_state = state
     print('Current mode is: ')
-    print(current_state)
+    print(current_state.mode)
+
+    if current_state.mode != 'OFFBOARD':
+        p = PoseStamped()
+        p.pose.position.x = 0
+        p.pose.position.y = 0
+        p.pose.position.z = 0
+        p.pose.orientation.w = 1.0
+
+        localPosePub = rospy.Publisher('/mavros/local_position/pose', PoseStamped, queue_size=1)
+
+        # publish the above point to convert to offboard mode
+        for i in range(100):
+            localPosePub.publish(p)
+        
+    #    offb_set_mode = SetMode()
+    #    offb_set_mode.request.custom_mode='OFFBOARD'
+
+    #    set_mode_client(base_mode=0, custom_mode="OFFBOARD")
+
+        flightModeService = rospy.ServiceProxy('mavros/set_mode', mavros_msgs.srv.SetMode)
+        flightModeService(custom_mode='OFFBOARD')
+
 
 ########################
 # Drone pose callback  #
@@ -106,7 +129,7 @@ def cmdLoopCallback(msg):
 
     if np.linalg.norm(np.array(targetPose)) is not 0:
         
-        print(targetPose)
+   #     print(targetPose)
         accDesired              = positionController(targetPose, targetVel, targetAcc, targetYaw)
         
         bodyRateCmd             = AttitudeController(accDesired)
@@ -149,7 +172,7 @@ def positionController(targetPos, targetVel, targetAcc, targetYaw):
     posErr = np.array(targetPose) - np.array(currPose)
     velErr = np.array(targetVel) - np.array(currVel)
 
-    print('Position and velocity errors are')
+  #  print('Position and velocity errors are')
  
     afb    = np.dot(np.diag(kPos),posErr) + np.dot(np.diag(kVel),velErr)
 
@@ -176,7 +199,6 @@ def AttitudeController(accDesired):
     rotmat_d     = helper.quatToRotationMatrix(qDes)
 
     zb           = -rotmat[:,2]
-
 
 #    zb           = -ref_acc/np.linalg.norm(ref_acc)
 
@@ -206,11 +228,6 @@ def initController():
 
     bodyRateCmdPublisher = rospy.Publisher('/mavros/setpoint_raw/attitude', AttitudeTarget, queue_size=1)
 
-    ################################
-    # set the control timer        #
-    ################################
-    rospy.Timer(rospy.Duration(0.01), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
-
     ####################################################
     # Change drone state to offboard mode              #
     # Drone has already taken off so no need to arm it #
@@ -219,23 +236,13 @@ def initController():
     arming_client = rospy.ServiceProxy('mavros/cmd/arming', CommandBool)
     set_mode_client = rospy.ServiceProxy('mavros/set_mode', SetMode) 
 
-    p = PoseStamped()
-    p.pose.position.x = 0
-    p.pose.position.y = 0
-    p.pose.position.z = 0
-    p.pose.orientation.w = 1.0
 
-    localPosePub = rospy.Publisher('/mavros/local_position/pose', PoseStamped, queue_size=1)
-
-    # publish the above point to convert to offboard mode
-    for i in range(10):
-        localPosePub.publish(p)
-    
-    offb_set_mode = SetMode()
-#    offb_set_mode.request.custom_mode='OFFBOARD'
-
-    set_mode_client(base_mode=0, custom_mode="OFFBOARD")
     print("Offboard mode started ..")
+
+    ################################
+    # set the control timer        #
+    ################################
+    rospy.Timer(rospy.Duration(0.01), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
 
     rospy.spin()
 
