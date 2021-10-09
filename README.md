@@ -17,6 +17,9 @@
 * cd scripts
 * python3 loadPose.py (publishes payload pose)
 
+* cd launch
+* roslaunch mavrosSim.launch 
+
 * cd src/payloadDroneNav
 * cd scripts
 * python3 controller.py
