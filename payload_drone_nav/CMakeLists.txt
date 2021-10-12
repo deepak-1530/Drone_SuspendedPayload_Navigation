@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(payloadDroneNav)
+project(payload_drone_nav)
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs

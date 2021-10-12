@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>payloadDroneNav</name>
+  <name>payload_drone_nav</name>
   <version>0.0.0</version>
-  <description>The payloadDroneNav package</description>
+  <description>The payload_drone_nav package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
