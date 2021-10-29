@@ -4,6 +4,43 @@
 
 import math
 import numpy as np
+from mavros_msgs.msg import State 
+
+
+class controlParams():
+    def __init__(self):
+        self.mass       = 1.5 # kg
+        self.currPose   = [0,0,0]    # x,y,z
+        self.currVel    = [0,0,0]    # xd, yd, zd
+        self.currOrient = [0,0,0,1]  # qx, qy, qz, qw
+
+        self.targetPose   = [0,0,2]    
+        self.targetVel    = [0,0,0.1]
+        self.targetOrient = [0,0,0,1]
+        self.targetAcc    = [0,0,0]
+
+        self.kPose        = [10,10,40]
+        self.kVel         = [1.5,1.5,3.3]
+
+        self.g_           = np.array([0,0,9.8]) # body frame is aligned with gravity
+        self.maxFbAcc     = 3.0
+        self.maxVel       = 5.0
+
+        self.norm_thrust_offset_ = 0.07
+        self.norm_thrust_const   = 0.05
+
+        self.bodyRateCmdPublisher = None
+
+        self.e1                   = [1,0,0]
+        self.e2                   = [0,1,0]
+        self.e3                   = [0,0,1]
+
+        self.b1                  = [1,0,0]
+        self.b2                  = [0,1,0]
+        self.b3                  = [0,0,1] 
+        self.attCtrl_tau_        = 0.10
+
+
 
 #############################
 # Convert acc to quaternion #
@@ -81,6 +118,28 @@ def quatToRotationMatrix(quat):
     r22 = quat[0]**2 - quat[1]**2 - quat[2]**2 + quat[3]**2
     
     R =  np.array([[r00,r01,r02],[r10,r11,r12],[r20,r21,r22]])
+    return R
+
+def quatToRotationMatrix_new(q):
+    qx = q[0]
+    qy = q[1]
+    qz = q[2]
+    qw = q[3]
+
+    R = np.zeros((3,3))
+    
+    R[0,0] = 1 - 2*qy**2 - 2*qz**2
+    R[0,1] = 2*qx*qy - 2*qz*qw
+    R[0,2] = 2*qx*qz + 2*qy*qw
+
+    R[1,0] = 2*qx*qy + 2*qz*qw
+    R[1,1] = 1-2*qx**2 - 2*qz**2
+    R[1,2] = 2*qy*qz - 2*qx*qw
+
+    R[2,0] = 2*qx*qz - 2*qy*qw
+    R[2,1] = 2*qy*qz + 2*qx*qw
+    R[2,2] = 1-2*qx**2 - 2*qy**2
+
     return R
 
 #####################

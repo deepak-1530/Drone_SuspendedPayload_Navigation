@@ -30,10 +30,10 @@ currVel      = [0,0,0] # current drone velocity
 currAtt      = [0,0,0,0] # current drone attitude
 currAttVel   = [0,0,0] # current drone angular velocity
 
-kPos         = [10.0, 10.0, 15.0]
-kVel         = [3.5, 3.5, 3.3]
+kPos         = [35.0, 35.0, 25.0]
+kVel         = [3.5, 3.5, 5.0]
 
-attCtrl_tau_ = 0.10
+attCtrl_tau_ = 0.40
 
 maxAcc       = 3.0
 maxVel       = 5.0
@@ -41,12 +41,12 @@ maxVel       = 5.0
 # the targets are updated as soon as a path is received
 targetPose          = [0,0,2]
 targetOrientation   = [0,0,0,0]
-targetVel           = [0,0,0]
+targetVel           = [0.0,0.0,0.0]
 targetAcc           = [0,0,0]
 targetYaw           = 0
 
 norm_thrust_offset_ = 0.10
-norm_thrust_const   = 0.07
+norm_thrust_const   = 0.04
 max_fb_acc          = 3.0
 g                   = [0,0,-9.8]
 
@@ -141,15 +141,15 @@ def cmdLoopCallback(msg):
         command.body_rate.y     = bodyRateCmd[1]
         command.body_rate.z     = bodyRateCmd[2]
         command.type_mask       = 128
-        command.orientation.w   = targetOrientation[0]
-        command.orientation.x   = targetOrientation[1]
-        command.orientation.y   = targetOrientation[2]
-        command.orientation.z   = targetOrientation[3]
+        command.orientation.w   = 1.0#targetOrientation[0]
+        command.orientation.x   = 0.0#targetOrientation[1]
+        command.orientation.y   = 0.0#targetOrientation[2]
+        command.orientation.z   = 0.0#targetOrientation[3]
         command.thrust          = bodyRateCmd[3]
 
         # publish the body rate command
         bodyRateCmdPublisher.publish(command)
-        print(targetPose, targetYaw, command.body_rate, command.thrust)
+       # print(targetPose, targetYaw, command.body_rate, command.thrust)
 #        print("Command published")
 
 
@@ -204,6 +204,8 @@ def AttitudeController(accDesired):
 
     errorAtt     = 0.5*helper.hatInv(rotmat_d.T * rotmat - rotmat.T * rotmat_d)
 
+    print('Attitude Error is: ' + str(np.linalg.norm(errorAtt)))
+
     rateCmd[0] = (2.0 / attCtrl_tau_)*errorAtt[0]
     rateCmd[1] = (2.0 / attCtrl_tau_)*errorAtt[1]
     rateCmd[2] = (2.0 / attCtrl_tau_)*errorAtt[2]
@@ -242,7 +244,7 @@ def initController():
     ################################
     # set the control timer        #
     ################################
-    rospy.Timer(rospy.Duration(0.01), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
+    rospy.Timer(rospy.Duration(0.03), cmdLoopCallback) # this checks the status of the drone and if it is not armed or not in offboard mode -> then it arms it and changes it to offboard mode
 
     rospy.spin()
 
