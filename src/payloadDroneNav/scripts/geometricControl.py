@@ -94,6 +94,7 @@ def targetCallback(msg):
     cP.targetOrient  = [pt.transforms[0].rotation.x, pt.transforms[0].rotation.y, pt.transforms[0].rotation.z, pt.transforms[0].rotation.w]
     cP.targetVel     = [pt.velocities[0].linear.x, pt.velocities[0].linear.y, pt.velocities[0].linear.z]
     cP.targetVel     = [0,0,0]
+    cP.targetAcc     = [0,0,0]
 ##################################################
 
 #####################
@@ -106,15 +107,19 @@ def positionController():
     print(f"position and velocity errors are: {errPos, errVel}")
 
     bodyFrameThrust     = np.dot(np.diag(cP.kPose), errPos) + np.dot(np.diag(cP.kVel), errVel) + cP.g_ - np.array(cP.targetAcc)
+    
     print(f'body frame thrust shape is: {bodyFrameThrust.shape}')
+
     b3d                 = -bodyFrameThrust/np.linalg.norm(bodyFrameThrust)
 
     Rcurr               = helper.quatToRotationMatrix_new(cP.currOrient) # rotation from inertial to body frame
 
     inertialFrameThrust = bodyFrameThrust*np.dot(Rcurr.T, np.array(cP.e3))
+    
     print("***********************")
     print(inertialFrameThrust.shape)
     print("************************")
+    
     massNormThrust      = inertialFrameThrust
     return massNormThrust, b3d
 
@@ -127,12 +132,12 @@ def attitudeController(thrust, b3d):
 
     Rcurr  =  helper.quatToRotationMatrix_new(cP.currOrient)
 
-    b1d         = Rtar[:,0]/np.linalg.norm(Rtar[:,0])
+    b1d         = [1,0,0]
     b2d         = np.cross(b3d, b1d)/np.linalg.norm(np.cross(b3d, b1d))
     proj_b1d    = np.cross(b2d, b3d)/np.linalg.norm(np.cross(b2d, b3d))
 
     # projected rotation matrix
-    Rd     = np.hstack([np.expand_dims(b1d,axis=1), np.expand_dims(b2d,axis=1), np.expand_dims(b3d,axis=1)])
+    Rd     = np.hstack([np.expand_dims(proj_b1d,axis=1), np.expand_dims(b2d,axis=1), np.expand_dims(b3d,axis=1)])
 
     errorAtt = 0.5*helper.hatInv(Rd.T * Rcurr - Rcurr.T * Rd)
 
@@ -146,7 +151,7 @@ def attitudeController(thrust, b3d):
     print(f'b3d is: {b3d}')
     print(f'thrust is: {thrust}')
 
-    rateCmd[3] = -min(0.0, min(1.0, cP.norm_thrust_const*np.dot(thrust, b3d) + cP.norm_thrust_offset_))
+    rateCmd[3] = max(0.0, min(1.0, cP.norm_thrust_const*np.dot(thrust, -b3d) + cP.norm_thrust_offset_))
 
     return rateCmd
 
@@ -156,8 +161,8 @@ def attitudeController(thrust, b3d):
 def cmdLoopCallback(msg):
     # fetch all the control parameters like current state and target state of the drone
     
-    acc, b3d     = positionController() # gives the thrust value and the desired orientation of the third body frame axis
-    bodyRateCmd      = attitudeController(acc, b3d)
+    acc, b3d                = positionController() # gives the thrust value and the desired orientation of the third body frame axis
+    bodyRateCmd             = attitudeController(acc, b3d)
     command                 = AttitudeTarget()
     command.header.stamp    = rospy.Time.now()
     command.header.frame_id = "map"

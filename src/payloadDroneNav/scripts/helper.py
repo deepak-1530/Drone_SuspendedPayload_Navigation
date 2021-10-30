@@ -15,11 +15,11 @@ class controlParams():
         self.currOrient = [0,0,0,1]  # qx, qy, qz, qw
 
         self.targetPose   = [0,0,2]    
-        self.targetVel    = [0,0,0.1]
+        self.targetVel    = [0,0,0]
         self.targetOrient = [0,0,0,1]
         self.targetAcc    = [0,0,0]
 
-        self.kPose        = [10,10,40]
+        self.kPose        = [25,20,30]
         self.kVel         = [1.5,1.5,3.3]
 
         self.g_           = np.array([0,0,9.8]) # body frame is aligned with gravity
