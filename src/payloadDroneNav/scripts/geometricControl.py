@@ -28,6 +28,7 @@ import helper
 from helper import controlParams as cP
 
 # ros dependencies
+import tf
 import rospy
 from mavros_msgs.msg import State 
 from mavros_msgs.msg import AttitudeTarget
@@ -100,11 +101,11 @@ def positionController():
     errPos              = np.array(cP.currPose) - np.array(cP.targetPose)
     errVel              = np.array(cP.currVel)  - np.array(cP.targetVel)
 
-    print(f"position and velocity errors are: {errPos, errVel}")
+    #print(f"position and velocity errors are: {errPos, errVel}")
 
     bodyFrameThrust     = np.dot(np.diag(cP.kPose), errPos) + np.dot(np.diag(cP.kVel), errVel) + cP.g_ - np.array(cP.targetAcc)
     
-    print(f'body frame thrust shape is: {bodyFrameThrust.shape}')
+    #print(f'body frame thrust shape is: {bodyFrameThrust.shape}')
 
     b3d                 = -bodyFrameThrust/np.linalg.norm(bodyFrameThrust)
 
@@ -124,18 +125,21 @@ def positionController():
 ######################
 def attitudeController(thrust, b3d):
     rateCmd = [0,0,0,0]
-    Rtar   =  helper.quatToRotationMatrix_new(cP.targetOrient)
+    #Rtar   =  helper.quatToRotationMatrix_new(cP.targetOrient)
+    
+    Rtar    =  tf.transformations.quaternion_matrix(cP.targetOrient)
+    Rcurr   =  tf.transformations.quaternion_matrix(cP.currOrient)    
 
-    Rcurr  =  helper.quatToRotationMatrix_new(cP.currOrient)
+    #Rcurr  =  helper.quatToRotationMatrix_new(cP.currOrient)
 
-    b1d         = [1,0,0]
+    b1d         = Rtar[0:3,0]
     b2d         = np.cross(b3d, b1d)/np.linalg.norm(np.cross(b3d, b1d))
     proj_b1d    = np.cross(b2d, b3d)/np.linalg.norm(np.cross(b2d, b3d))
 
     # projected rotation matrix
     Rd          = np.hstack([np.expand_dims(proj_b1d,axis=1), np.expand_dims(b2d,axis=1), np.expand_dims(b3d,axis=1)])
 
-    errorAtt    = 0.5*helper.hatInv(Rd.T * Rcurr - Rcurr.T * Rd)
+    errorAtt    = 0.5*helper.hatInv(Rd[0:3,0:3].T * Rcurr[0:3,0:3] - Rcurr[0:3,0:3].T * Rd[0:3,0:3])
 
     print('Attitude Error is: ' + str(np.linalg.norm(errorAtt)))
 
@@ -144,8 +148,8 @@ def attitudeController(thrust, b3d):
     rateCmd[2] = (2.0 / cP.attCtrl_tau_)*errorAtt[2]
 
     print(np.dot(thrust, b3d))
-    print(f'b3d is: {b3d}')
-    print(f'thrust is: {thrust}')
+    #print(f'b3d is: {b3d}')
+    #print(f'thrust is: {thrust}')
 
     rateCmd[3] = max(0.0, min(1.0, cP.norm_thrust_const*np.dot(thrust, -b3d) + cP.norm_thrust_offset_))
 
@@ -174,7 +178,7 @@ def cmdLoopCallback(msg):
 
         # publish the body rate command
     cP.bodyRateCmdPublisher.publish(command)
-    print(f"Control command is: {command}")
+    print(command)
 
 
 def startController():

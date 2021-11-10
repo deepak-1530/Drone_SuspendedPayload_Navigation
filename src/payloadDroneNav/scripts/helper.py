@@ -38,7 +38,7 @@ class controlParams():
         self.b1                  = [1,0,0]
         self.b2                  = [0,1,0]
         self.b3                  = [0,0,1] 
-        self.attCtrl_tau_        = 0.10
+        self.attCtrl_tau_        = 0.05
 
 
 
