@@ -98,7 +98,7 @@ void goal_pose_cb(const geometry_msgs::PoseStamped pose)
 
 ///////////////////////////////////////////////////////////////////
 /**  Plan the path until goal is reached **/
-void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher map)
+void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher splinePubPayload, ros::Publisher map)
 {
     while(!DESTINATION_REACHED || ros::ok()) /** until the goal is reached or the node is killed, keep running the process **/
     {
@@ -197,10 +197,27 @@ void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher map)
                we got the trajectory generated for the drone
                now for the ideal trajectory of the payload -> just decrease the z coordinate by 1
             */
+            std::vector<Eigen::Vector3d> payloadTraj;
+
+            for(int i = 0; i<currTraj.size(); i++)
+            {
+                Eigen::Vector3d pt = currTraj.at(i);
+
+                Eigen::Vector3d payloadPt;
+
+                payloadPt(0) = pt(0);
+                payloadPt(1) = pt(1);
+                payloadPt(2) = pt(2) - 1;
+
+                payloadTraj.push_back(payloadPt);
+            }
             
             count++;
 
+            std::cout<<"Trajectory length for payload and drone "<<payloadTraj.size()<<" "<<currTraj.size()<<std::endl;
+
             std::vector<Eigen::Vector3d> spTraj;
+            std::vector<Eigen::Vector3d> spTrajPayload;
 
             if(currTraj.size() > 0)
             {
@@ -208,17 +225,24 @@ void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher map)
                 currTraj.pop_back();
                 currTraj.pop_back();
 
+                payloadTraj.pop_back();
+                payloadTraj.pop_back();
+
                 bsplineDrone.setControlPoints(currTraj);
+                bsplinePayload.setControlPoints(payloadTraj);
 
                 // generate the bspline trajectory
                 spTraj = bsplineDrone.getBSplineTrajectory();
-
+                spTrajPayload = bsplinePayload.getBSplineTrajectory();
                 
-                std::cout<<"Returned bspline size is "<<spTraj.size()<<std::endl;            
+                std::cout<<"Returned bspline size (drone) is "<<spTraj.size()<<std::endl;   
+                std::cout<<"Returned bspline size (payload) is "<<spTrajPayload.size()<<std::endl;         
 
                 bsplineDrone.publishTrajectory(spTraj, splinePub);
+                bsplinePayload.publishTrajectory(spTrajPayload, splinePubPayload);
 
-
+                // now generate the bspline for the payload -> ideally the payload should lie vertically below the drone
+                
             }
             
             for(auto i = currTraj.begin(); i != currTraj.end(); i++)
@@ -302,14 +326,15 @@ int main(int argc, char **argv)
     ros::NodeHandle n;
 
     /** Subscribers **/
-    ros::Subscriber oct     = n.subscribe<octomap_msgs::Octomap>("/octomap_binary",1,octomap_cb);
-    ros::Subscriber pos     = n.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose",10,local_pose_cb);
-    ros::Subscriber goal    = n.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal",1,goal_pose_cb);
+    ros::Subscriber oct             = n.subscribe<octomap_msgs::Octomap>("/octomap_binary",1,octomap_cb);
+    ros::Subscriber pos             = n.subscribe<geometry_msgs::PoseStamped>("/mavros/local_position/pose",10,local_pose_cb);
+    ros::Subscriber goal            = n.subscribe<geometry_msgs::PoseStamped>("/move_base_simple/goal",1,goal_pose_cb);
  
     /** Publishers **/
-    ros::Publisher path       = n.advertise<nav_msgs::Path>("/fastPlanner_path",1); 
-    ros::Publisher splinePub  = n.advertise<nav_msgs::Path>("/fastPlanner_spline",1);
-    ros::Publisher map        = n.advertise<visualization_msgs::MarkerArray>("/costMap_marker_array",1); // one at a time
+    ros::Publisher path             = n.advertise<nav_msgs::Path>("/fastPlanner_path",1); 
+    ros::Publisher splinePub        = n.advertise<nav_msgs::Path>("/fastPlanner_spline",1);
+    ros::Publisher splinePubPayload = n.advertise<nav_msgs::Path>("/fastPlanner_payload_spline",1);
+    ros::Publisher map              = n.advertise<visualization_msgs::MarkerArray>("/costMap_marker_array",1); // one at a time
 
     ros::Rate rate(20);
 
@@ -339,12 +364,13 @@ int main(int argc, char **argv)
         startAcc = Eigen::Vector3d::Ones();  // set the starting acceleration as (1,1,1)
 
         bsplineDrone.setOrder(order);
+        bsplinePayload.setOrder(order);
         
         std::cout<<"Starting planning now ..."<<std::endl;
 
         kAstar.setParam(n); // set the fast planner parameters
 
-        plan(path, splinePub, map);
+        plan(path, splinePub, splinePubPayload, map);
     }
 
     return 0;
