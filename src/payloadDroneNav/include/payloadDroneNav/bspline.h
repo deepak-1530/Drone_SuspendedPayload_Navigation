@@ -9,6 +9,10 @@
 #include<fstream>
 #include<cstdlib>
 
+#include<ros/ros.h>
+#include<nav_msgs/Path.h>
+#include<geometry_msgs/PoseStamped.h>
+
 namespace BSpline
 {
 class BSpline
@@ -16,6 +20,7 @@ class BSpline
     public:
         int order=3;
         int numCtrlPoints, knotSize, numSegments;
+        nav_msgs::Path splinePath;
         std::vector<float> knotVector;
         std::vector<Eigen::Vector3d> ctrlPoints;
         std::vector<Eigen::Vector3d> splineTrajectory;             // this contains all the points in the spline for all the control points
@@ -27,6 +32,7 @@ class BSpline
         std::vector<Eigen::Vector3d> getBSplineTrajectory();
         void setControlPoints(std::vector<Eigen::Vector3d> _ctrlPoints_);
         float interval;
+        void publishTrajectory(std::vector<Eigen::Vector3d>, ros::Publisher);
 
     private:
         double coxDeBoorBasis(int i, int k, float u); // this is the spline basis function --> using recursive cox-deboor equation to get bspline basis function
@@ -200,3 +206,51 @@ double BSpline::BSpline::coxDeBoorBasis(int i, int k, float t)
     
     return C1 + C2;
 }   
+
+///////////////////////////////////////////////////////////////////////////
+/* Publish the bspline trajectory generated */
+void BSpline::BSpline::publishTrajectory(std::vector<Eigen::Vector3d> splineTraj, ros::Publisher splinePub)
+{
+        float INF = 1000;
+
+        for(auto i = splineTraj.begin(); i!=splineTraj.end(); i++)
+            {
+               geometry_msgs::PoseStamped p;
+               Eigen::Vector3d pos = *i; 
+               Eigen::Vector3d pos_next;
+
+               //std::cout<<"Waypoint in spline "<<pos.transpose()<<std::endl;
+
+                if(-INF<pos(0)<INF && -INF<pos(1)<INF && -INF<pos(2)<INF)
+                { 
+                    p.pose.position.x = pos(0);
+                    p.pose.position.y = pos(1);
+                    p.pose.position.z = pos(2);
+
+                if(i!=splineTraj.end()-1)
+                    {
+                        pos_next = *(i+1);
+
+                        float currYaw = atan2((pos_next(1) - pos(1)),(pos_next(0) - pos(0)));
+                        float qz = sin(currYaw/2.0);
+                        float qw = cos(currYaw/2.0);
+
+                        p.pose.orientation.x = 0.0;
+                        p.pose.orientation.y = 0.0;
+                        p.pose.orientation.z = qz;
+                        p.pose.orientation.w = qw;
+
+                        splinePath.header.stamp = ros::Time::now();
+                        splinePath.header.frame_id = "map";
+                        splinePath.poses.push_back(p); 
+                    }
+                }
+                    ros::spinOnce();
+
+            }
+
+            splinePub.publish(splinePath);
+            std::cout<<"Published spline for the current path "<<std::endl;
+
+
+}

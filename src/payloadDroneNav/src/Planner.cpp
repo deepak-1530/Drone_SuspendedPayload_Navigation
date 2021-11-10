@@ -50,8 +50,8 @@ int count;     // count for planning iteration
 /** Initialize the planner and mapping objects **/
 fast_planner::KinodynamicAstar kAstar;
 Map3D::OctoMapEDT costMap3D;
-BSpline::BSpline bspline(splineInterval);
-
+BSpline::BSpline bsplineDrone(splineInterval);
+BSpline::BSpline bsplinePayload(splineInterval);
 
 /** Cost Map visualization **/
 visualization_msgs::MarkerArray costMap_vis;
@@ -98,7 +98,7 @@ void goal_pose_cb(const geometry_msgs::PoseStamped pose)
 
 ///////////////////////////////////////////////////////////////////
 /**  Plan the path until goal is reached **/
-void plan(ros::Publisher path,  ros::Publisher spline, ros::Publisher map)
+void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher map)
 {
     while(!DESTINATION_REACHED || ros::ok()) /** until the goal is reached or the node is killed, keep running the process **/
     {
@@ -192,6 +192,11 @@ void plan(ros::Publisher path,  ros::Publisher spline, ros::Publisher map)
             
             /** get the planned path **/
             std::vector<Eigen::Vector3d> currTraj = kAstar.getKinoTraj(deltaT);
+
+            /*
+               we got the trajectory generated for the drone
+               now for the ideal trajectory of the payload -> just decrease the z coordinate by 1
+            */
             
             count++;
 
@@ -199,52 +204,20 @@ void plan(ros::Publisher path,  ros::Publisher spline, ros::Publisher map)
 
             if(currTraj.size() > 0)
             {
-            /** generate bspline trajectory **/
-            currTraj.pop_back();
-            currTraj.pop_back();
+                /** generate bspline trajectory **/
+                currTraj.pop_back();
+                currTraj.pop_back();
 
-            bspline.setControlPoints(currTraj);
+                bsplineDrone.setControlPoints(currTraj);
 
-            // generate the bspline trajectory
-            spTraj = bspline.getBSplineTrajectory();
+                // generate the bspline trajectory
+                spTraj = bsplineDrone.getBSplineTrajectory();
 
-            std::cout<<"Returned bspline size is "<<spTraj.size()<<std::endl;            
-          
-            for(auto i = spTraj.begin(); i!=spTraj.end(); i++)
-            {
-               geometry_msgs::PoseStamped p;
-               Eigen::Vector3d pos = *i; 
-               Eigen::Vector3d pos_next;
+                
+                std::cout<<"Returned bspline size is "<<spTraj.size()<<std::endl;            
 
-               //std::cout<<"Waypoint in spline "<<pos.transpose()<<std::endl;
+                bsplineDrone.publishTrajectory(spTraj, splinePub);
 
-                if(-INF<pos(0)<INF && -INF<pos(1)<INF && -INF<pos(2)<INF)
-                { 
-                    p.pose.position.x = pos(0);
-                    p.pose.position.y = pos(1);
-                    p.pose.position.z = pos(2);
-
-                if(i!=spTraj.end()-1)
-                    {
-                        pos_next = *(i+1);
-
-                        float currYaw = atan2((pos_next(1) - pos(1)),(pos_next(0) - pos(0)));
-                        float qz = sin(currYaw/2.0);
-                        float qw = cos(currYaw/2.0);
-
-                        p.pose.orientation.x = 0.0;
-                        p.pose.orientation.y = 0.0;
-                        p.pose.orientation.z = qz;
-                        p.pose.orientation.w = qw;
-
-                        splinePath.header.stamp = ros::Time::now();
-                        splinePath.header.frame_id = "map";
-                        splinePath.poses.push_back(p); 
-                    }
-                }
-                    ros::spinOnce();
-
-            }
 
             }
             
@@ -284,7 +257,6 @@ void plan(ros::Publisher path,  ros::Publisher spline, ros::Publisher map)
             }
             
 
-            spline.publish(splinePath);
             path.publish(generatedPath);
             
 
@@ -366,7 +338,7 @@ int main(int argc, char **argv)
         startVel = Eigen::Vector3d::Zero(); // starting with 0 initial velocity i.e. static 
         startAcc = Eigen::Vector3d::Ones();  // set the starting acceleration as (1,1,1)
 
-        bspline.setOrder(order);
+        bsplineDrone.setOrder(order);
         
         std::cout<<"Starting planning now ..."<<std::endl;
 
