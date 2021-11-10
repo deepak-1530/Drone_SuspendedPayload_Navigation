@@ -102,7 +102,7 @@ def positionController():
     errVel              = np.array(cP.currVel)  - np.array(cP.targetVel)
 
     #print(f"position and velocity errors are: {errPos, errVel}")
-
+    print(errPos)
     bodyFrameThrust     = np.dot(np.diag(cP.kPose), errPos) + np.dot(np.diag(cP.kVel), errVel) + cP.g_ - np.array(cP.targetAcc)
     
     #print(f'body frame thrust shape is: {bodyFrameThrust.shape}')
@@ -110,8 +110,8 @@ def positionController():
     b3d                 = -bodyFrameThrust/np.linalg.norm(bodyFrameThrust)
 
     Rcurr               = helper.quatToRotationMatrix_new(cP.currOrient) # rotation from inertial to body frame
-
-    inertialFrameThrust = bodyFrameThrust*np.dot(Rcurr.T, np.array(cP.e3))
+    Rcurr               = tf.transformations.quaternion_matrix(cP.currOrient)
+    inertialFrameThrust = bodyFrameThrust*np.dot(Rcurr[0:3,0:3].T, np.array(cP.e3))
     
     print("***********************")
     print(inertialFrameThrust.shape)
