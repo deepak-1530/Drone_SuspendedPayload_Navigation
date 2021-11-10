@@ -13,13 +13,30 @@
 * cp https://github.com/deepak-1530/Drone_SuspendedPayload_Navigation/tree/master/models/drone/iris_depth_camera.sdf PX4-Autopilot/Tools/sitl_gazebo/models/iris_depth_camera
 * This would replace the original iris depth camera with the new model
 * 
-#### Directory
-* cd scripts
-* python3 loadPose.py (publishes payload pose)
+#### Running the pipeline
+* Terminal-1
+    > cd scripts
 
-* cd launch
-* roslaunch mavrosSim.launch 
+    > python3 loadPose.py (publishes payload pose)
 
-* cd src/payloadDroneNav
-* cd scripts
-* python3 controller.py
+* Terminal-2
+    > cd launch
+    
+    > roslaunch map.launch 
+* Terminal-3
+    > rosrun payloadDroneNav Planner
+
+    > When prompted 'start over ?', enter 1 or 0
+
+* Terminal-4 (for PX4 Controller)
+    > rosrun payloadDroneNav Controller
+
+    > Enter delay between control points when prompted (around 0.01-0.15)
+
+
+* Terminal-5 (for geometric control)
+    > cd src/payloadDroneNav
+    
+    > cd scripts
+    
+    > python3 controller.py
