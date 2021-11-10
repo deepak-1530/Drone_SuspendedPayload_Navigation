@@ -1,0 +1,8 @@
+prefix=/home/deepak/Drone_SuspendedPayload_Navigation/install
+
+Name: payloadDroneNav
+Description: Description of payloadDroneNav
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

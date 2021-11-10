@@ -19,7 +19,7 @@ class controlParams():
         self.targetOrient = [0,0,0,1]
         self.targetAcc    = [0,0,0]
 
-        self.kPose        = [8,8,10]
+        self.kPose        = [11,11,21]
         self.kVel         = [1.5,1.5,3.3]
 
         self.g_           = np.array([0,0,-9.8]) # body frame z axis is aligned with gravity
@@ -34,7 +34,7 @@ class controlParams():
         self.e1                   = [1,0,0]
         self.e2                   = [0,1,0]
         self.e3                   = [0,0,1]
-        
+
         self.attCtrl_tau_        = 0.10
 
 

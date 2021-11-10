@@ -38,7 +38,7 @@ class BSpline
 /** constructor **/
 BSpline::BSpline::BSpline(float interval_)
 {
-    order = 3;
+    order = 5;
     std::cout<<"Spline initialized \n";
     interval = 0.2;
 }
@@ -55,7 +55,7 @@ void BSpline::BSpline::setControlPoints(std::vector<Eigen::Vector3d> _ctrlPoints
     ctrlPoints.clear();
 
     ctrlPoints = _ctrlPoints_;
-    numCtrlPoints = _ctrlPoints_.size();
+    numCtrlPoints = _ctrlPoints_.size()-1;
 
     std::cout<<"No. of control points are "<<numCtrlPoints<<std::endl;
 

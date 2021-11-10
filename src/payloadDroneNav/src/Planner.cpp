@@ -29,7 +29,7 @@ nav_msgs::Path generatedPath;
 nav_msgs::Path splinePath;
 
 /** time step to generate the trajectory **/
-float deltaT = 0.20;
+float deltaT = 0.50;
 
 /** decision variables **/
 bool goalReceived = false;
@@ -200,14 +200,17 @@ void plan(ros::Publisher path,  ros::Publisher spline, ros::Publisher map)
             if(currTraj.size() > 0)
             {
             /** generate bspline trajectory **/
+            currTraj.pop_back();
+            currTraj.pop_back();
+
             bspline.setControlPoints(currTraj);
 
             // generate the bspline trajectory
-           spTraj = bspline.getBSplineTrajectory();
+            spTraj = bspline.getBSplineTrajectory();
 
             std::cout<<"Returned bspline size is "<<spTraj.size()<<std::endl;            
           
-            for(auto i = spTraj.begin(); i!=spTraj.end() - 30; i++)
+            for(auto i = spTraj.begin(); i!=spTraj.end(); i++)
             {
                geometry_msgs::PoseStamped p;
                Eigen::Vector3d pos = *i; 
@@ -286,7 +289,8 @@ void plan(ros::Publisher path,  ros::Publisher spline, ros::Publisher map)
             
 
             // insert this in the global trajectory
-            trajectory.insert(trajectory.end(), currTraj.begin(), currTraj.end());
+            trajectory.insert(trajectory.end(), spTraj.begin(), spTraj.end());
+            
             std::cout<<"Global trajectory size ... "<<trajectory.size()<<std::endl;
             std::cout<<"\n";
 
