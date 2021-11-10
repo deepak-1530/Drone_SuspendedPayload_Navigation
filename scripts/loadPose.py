@@ -68,9 +68,9 @@ def findArucoMarkers(img, markerSize = 6, totalMarkers=250, draw=True):
             
             cv2.circle(img_, (int(cX), int(cY)), 8, (0,0,255), -1)
 
-        img_ = cv2.putText(img_, str(tvec), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2, cv2.LINE_AA)
+            img_ = cv2.putText(img_, str(tvec), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2, cv2.LINE_AA)
 
-        loadPose_camFrame = tvec/len(bboxs)
+            loadPose_camFrame = tvec/len(bboxs)
 
         try:
             (trans,rot) = listener.lookupTransform('map', 'camera_link_rgb', rospy.Time(0))

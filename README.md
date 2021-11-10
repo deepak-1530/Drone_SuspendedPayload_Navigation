@@ -39,4 +39,4 @@
     
     > cd scripts
     
-    > python3 controller.py
+    > python3 geometricControl.py
