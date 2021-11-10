@@ -19,14 +19,14 @@ class controlParams():
         self.targetOrient = [0,0,0,1]
         self.targetAcc    = [0,0,0]
 
-        self.kPose        = [25,20,30]
+        self.kPose        = [8,8,10]
         self.kVel         = [1.5,1.5,3.3]
 
-        self.g_           = np.array([0,0,9.8]) # body frame is aligned with gravity
+        self.g_           = np.array([0,0,-9.8]) # body frame z axis is aligned with gravity
         self.maxFbAcc     = 3.0
         self.maxVel       = 5.0
 
-        self.norm_thrust_offset_ = 0.07
+        self.norm_thrust_offset_ = 0.10
         self.norm_thrust_const   = 0.05
 
         self.bodyRateCmdPublisher = None

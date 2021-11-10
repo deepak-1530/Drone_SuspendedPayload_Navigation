@@ -41,6 +41,7 @@ import mavros_msgs
 cP = cP()
 
 current_state = State()
+
 #####################
 # State callback    #
 #####################
@@ -62,11 +63,6 @@ def state_cb(state):
         # publish the above point to convert to offboard mode
         for i in range(100):
             localPosePub.publish(p)
-        
-    #    offb_set_mode = SetMode()
-    #    offb_set_mode.request.custom_mode='OFFBOARD'
-
-    #    set_mode_client(base_mode=0, custom_mode="OFFBOARD")
 
         flightModeService = rospy.ServiceProxy('mavros/set_mode', mavros_msgs.srv.SetMode)
         flightModeService(custom_mode='OFFBOARD')
@@ -101,8 +97,8 @@ def targetCallback(msg):
 # Position Control  #
 #####################
 def positionController():
-    errPos = np.array(cP.currPose) - np.array(cP.targetPose)
-    errVel = np.array(cP.currVel)  - np.array(cP.targetVel)
+    errPos              = np.array(cP.currPose) - np.array(cP.targetPose)
+    errVel              = np.array(cP.currVel)  - np.array(cP.targetVel)
 
     print(f"position and velocity errors are: {errPos, errVel}")
 
@@ -137,9 +133,9 @@ def attitudeController(thrust, b3d):
     proj_b1d    = np.cross(b2d, b3d)/np.linalg.norm(np.cross(b2d, b3d))
 
     # projected rotation matrix
-    Rd     = np.hstack([np.expand_dims(proj_b1d,axis=1), np.expand_dims(b2d,axis=1), np.expand_dims(b3d,axis=1)])
+    Rd          = np.hstack([np.expand_dims(proj_b1d,axis=1), np.expand_dims(b2d,axis=1), np.expand_dims(b3d,axis=1)])
 
-    errorAtt = 0.5*helper.hatInv(Rd.T * Rcurr - Rcurr.T * Rd)
+    errorAtt    = 0.5*helper.hatInv(Rd.T * Rcurr - Rcurr.T * Rd)
 
     print('Attitude Error is: ' + str(np.linalg.norm(errorAtt)))
 
@@ -190,7 +186,7 @@ def startController():
 
     cP.bodyRateCmdPublisher = rospy.Publisher('/mavros/setpoint_raw/attitude', AttitudeTarget, queue_size=1)
     
-    rospy.Timer(rospy.Duration(0.04), cmdLoopCallback)  # main control loop called at 30Hz
+    rospy.Timer(rospy.Duration(0.03), cmdLoopCallback)  # main control loop called at 30Hz
     
     print("Controller started")
     rospy.spin()
