@@ -155,12 +155,12 @@ void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher splineP
             kAstar.setEnvironment(&DistMap);
 
             // visualize the EDT Map
-            //costMap3D.getCostMapMarker(costMap_vis, &DistMap, map);
+            costMap3D.getCostMapMarker(costMap_vis, &DistMap, map);
 
             // run the planner now (x is the status of the planner)
             int x;
             
-            if(/*count == 0 || */startOver == 1)
+            if(startOver == 1)
                 {
                     x = kAstar.search(startPose, startVel, startAcc, goalPose, goalVel, true, false, 0.0);
                     startOver = 0;
@@ -193,6 +193,7 @@ void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher splineP
             /** get the planned path **/
             std::vector<Eigen::Vector3d> currTraj = kAstar.getKinoTraj(deltaT);
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             /*
                we got the trajectory generated for the drone
                now for the ideal trajectory of the payload -> just decrease the z coordinate by 1
@@ -222,12 +223,12 @@ void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher splineP
             if(currTraj.size() > 0)
             {
                 /** generate bspline trajectory **/
-                currTraj.pop_back();
-                currTraj.pop_back();
-
-                payloadTraj.pop_back();
-                payloadTraj.pop_back();
-
+                for(int i = 0; i<2; i++)
+                {
+                    currTraj.pop_back();
+                    payloadTraj.pop_back();
+                }
+                
                 bsplineDrone.setControlPoints(currTraj);
                 bsplinePayload.setControlPoints(payloadTraj);
 
@@ -235,16 +236,16 @@ void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher splineP
                 spTraj = bsplineDrone.getBSplineTrajectory();
                 spTrajPayload = bsplinePayload.getBSplineTrajectory();
                 
-                std::cout<<"Returned bspline size (drone) is "<<spTraj.size()<<std::endl;   
-                std::cout<<"Returned bspline size (payload) is "<<spTrajPayload.size()<<std::endl;         
+                std::cout<<" Returned bspline size (drone)   is " << spTraj.size()        << std::endl;   
+                std::cout<<" Returned bspline size (payload) is " << spTrajPayload.size() << std::endl;         
 
                 bsplineDrone.publishTrajectory(spTraj, splinePub);
                 bsplinePayload.publishTrajectory(spTrajPayload, splinePubPayload);
 
-                // now generate the bspline for the payload -> ideally the payload should lie vertically below the drone
-                
             }
             
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
             for(auto i = currTraj.begin(); i != currTraj.end(); i++)
             {
                 geometry_msgs::PoseStamped p;
@@ -280,10 +281,8 @@ void plan(ros::Publisher path,  ros::Publisher splinePub, ros::Publisher splineP
                     ros::spinOnce();
             }
             
-
             path.publish(generatedPath);
             
-
             // insert this in the global trajectory
             trajectory.insert(trajectory.end(), spTraj.begin(), spTraj.end());
             
@@ -360,7 +359,7 @@ int main(int argc, char **argv)
         std::cout<<"Setting initial velocity and acceleration .."<<std::endl;
 
         goalVel  = Eigen::Vector3d::Zero();  // velocity at goal location set to 0
-        startVel = Eigen::Vector3d::Zero(); // starting with 0 initial velocity i.e. static 
+        startVel = Eigen::Vector3d::Zero();  // starting with 0 initial velocity i.e. static 
         startAcc = Eigen::Vector3d::Ones();  // set the starting acceleration as (1,1,1)
 
         bsplineDrone.setOrder(order);
