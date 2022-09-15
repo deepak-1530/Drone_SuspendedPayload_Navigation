@@ -41,5 +41,6 @@
     
     > python3 geometricControl.py
 
+* Demos
 
 ![](payload_avoidance.gif) | ![](payload_state.gif)
