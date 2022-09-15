@@ -40,3 +40,6 @@
     > cd scripts
     
     > python3 geometricControl.py
+
+
+![](payload_avoidance.gif) | ![](payload_state.gif)
