@@ -7,6 +7,9 @@
 # new environment variables
 
 # modified environment variables
-export LD_LIBRARY_PATH='/home/deepak/Deepak/IIITH/fastplanner_ws/devel/lib:/home/deepak/Deepak/DRONE_RESEARCH/droneMap_ws/devel/lib:/home/deepak/catkin_ws/devel/lib:/home/deepak/Deepak/IIITH/IIIT_H/lucifer_ws/devel/lib:/home/deepak/Deepak/IIITH/IIIT_H/catkin_ws/devel/lib:/opt/ros/melodic/lib'
-export PKG_CONFIG_PATH='/home/deepak/Deepak/IIITH/fastplanner_ws/devel/lib/pkgconfig:/home/deepak/Deepak/DRONE_RESEARCH/droneMap_ws/devel/lib/pkgconfig:/home/deepak/catkin_ws/devel/lib/pkgconfig:/home/deepak/Deepak/IIITH/IIIT_H/lucifer_ws/devel/lib/pkgconfig:/home/deepak/Deepak/IIITH/IIIT_H/catkin_ws/devel/lib/pkgconfig:/opt/ros/melodic/lib/pkgconfig'
+export CMAKE_PREFIX_PATH="/home/deepak/Drone_SuspendedPayload_Navigation/devel:$CMAKE_PREFIX_PATH"
+export LD_LIBRARY_PATH="/home/deepak/Drone_SuspendedPayload_Navigation/devel/lib:$LD_LIBRARY_PATH"
+export PKG_CONFIG_PATH="/home/deepak/Drone_SuspendedPayload_Navigation/devel/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PWD='/home/deepak/Drone_SuspendedPayload_Navigation/build'
+export ROSLISP_PACKAGE_DIRECTORIES="/home/deepak/Drone_SuspendedPayload_Navigation/devel/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
+export ROS_PACKAGE_PATH="/home/deepak/Drone_SuspendedPayload_Navigation/src:$ROS_PACKAGE_PATH"

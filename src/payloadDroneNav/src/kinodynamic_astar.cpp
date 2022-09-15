@@ -269,7 +269,7 @@ int fast_planner::KinodynamicAstar::search(Eigen::Vector3d start_pt, Eigen::Vect
           OctoEDT->getDistanceAndClosestObstacle(pointP, distP, closestObstacleP);
           
           //std::cout<<"Distances are: "<<dist<<std::endl;
-          if (distD < margin_ || distP < 0.50) 
+          if (distD < 0.30 || distP < 0.30) 
           {
             std::cout<<"Collision "<<pointD<<" and "<<pointP<<" -- "<<distD<<" and "<<distP<<std::endl;
             is_occ = true;
@@ -372,7 +372,7 @@ void fast_planner::KinodynamicAstar::setParam(ros::NodeHandle& nh) {
   nh.param("search/resolution_astar", resolution_, 0.05);
   nh.param("search/time_resolution", time_resolution_, 0.8);
   nh.param("search/lambda_heu", lambda_heu_, 1.0);
-  nh.param("search/margin", margin_, 0.50);
+  nh.param("search/margin", margin_, 0.30);
   nh.param("search/allocate_num", allocate_num_, 100000);
   nh.param("search/check_num", check_num_, 5);
 
