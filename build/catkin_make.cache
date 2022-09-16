@@ -1,2 +1,0 @@
-payloadDroneNav
--DCATKIN_DEVEL_PREFIX=/home/deepak/Drone_SuspendedPayload_Navigation/devel -DCMAKE_INSTALL_PREFIX=/home/deepak/Drone_SuspendedPayload_Navigation/install -G Unix Makefiles
